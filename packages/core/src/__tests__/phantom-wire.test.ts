@@ -2372,4 +2372,15 @@ echo "[]"
         .replaceAll("Café-日本", "Zzq"),
     ).toBe(sentinel);
   });
+
+  it("emits a placeholder-shaped provider name verbatim, with no replacement step", () => {
+    // The stub is built by plain interpolation: there is no replacement map to
+    // consult, so a `{{token}}` in the input must come out exactly as given.
+    const stub = webhookStubFor("{{token}}");
+    expect(stub).toContain("stub for {{token}}.");
+    expect(stub).toContain("phantom reveal {{TOKEN}}_WEBHOOK_SECRET");
+    expect(stub).toContain("handle{{token}}Webhook");
+    expect(stub).not.toContain("undefined");
+    expect(stub).not.toContain("[object");
+  });
 });
