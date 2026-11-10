@@ -115,6 +115,52 @@ name = "totally-made-up-provider"
     }
   });
 
+  it("rejects reading a recipe whose providers field is not an array", async () => {
+    const { dir, cleanup } = scratchDir();
+    try {
+      const recipesDir = join(dir, ".stack", "recipes");
+      mkdirSync(recipesDir, { recursive: true });
+      const bad: Record<string, string> = {
+        "string-providers": 'providers = "neon"',
+        "number-providers": "providers = 3",
+        "table-providers": '[providers]\nname = "neon"',
+      };
+      for (const [id, providers] of Object.entries(bad)) {
+        writeFileSync(
+          join(recipesDir, `${id}.toml`),
+          `id = "${id}"\nquery = "q"\ncreatedAt = "2026-01-01T00:00:00.000Z"\n${providers}\n`,
+        );
+        const err = await readRecipe(id, dir).catch((e) => e);
+        expect(err).toBeInstanceOf(StackError);
+        expect(err.code).toBe("INVALID_RECIPE");
+        expect(err.message).toContain('invalid "providers" field');
+        expect(err.message).toContain(id);
+      }
+      // listRecipes skips them rather than failing the picker.
+      expect(await listRecipes(dir)).toEqual([]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("rejects a providers array containing a non-table entry", async () => {
+    const { dir, cleanup } = scratchDir();
+    try {
+      const recipesDir = join(dir, ".stack", "recipes");
+      mkdirSync(recipesDir, { recursive: true });
+      writeFileSync(
+        join(recipesDir, "bad-entry.toml"),
+        'id = "bad-entry"\nquery = "q"\ncreatedAt = "2026-01-01T00:00:00.000Z"\nproviders = ["neon"]\n',
+      );
+      const err = await readRecipe("bad-entry", dir).catch((e) => e);
+      expect(err).toBeInstanceOf(StackError);
+      expect(err.code).toBe("INVALID_RECIPE");
+      expect(err.message).toContain("providers[0]");
+    } finally {
+      cleanup();
+    }
+  });
+
   it("listRecipes returns newest first and skips corrupt files", async () => {
     const { dir, cleanup } = scratchDir();
     try {
@@ -228,7 +274,8 @@ describe("ai/recipe readRecipe malformed input", () => {
     try {
       writeRaw(dir, "scalar", 'id = "scalar"\nproviders = [1, "x"]\n');
       await expect(readRecipe("scalar", dir)).rejects.toMatchObject({
-        code: "UNKNOWN_PROVIDER_IN_RECIPE",
+        code: "INVALID_RECIPE",
+        message: expect.stringContaining("providers[0]"),
       });
     } finally {
       cleanup();
