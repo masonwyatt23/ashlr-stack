@@ -189,6 +189,31 @@ test("two-section fixture keeps section names and per-section entries in source 
   expect(sectionEntries(md.replace(/\n/g, "\r\n"))).toEqual(sectionEntries(md));
 });
 
+test("CRLF two-section fixture preserves section names and entries in source order", () => {
+  const markdown = [
+    "## 0.4.0 (2026-11-03)",
+    "### Fixed",
+    "- Zebra fix.",
+    "- Alpha fix.",
+    "### Added",
+    "- Zebra addition.",
+    "- Alpha addition.",
+    "",
+  ].join("\r\n");
+
+  expect(sectionEntries(markdown)).toEqual([
+    { version: "## 0.4.0 (2026-11-03)", section: "Fixed", entries: ["Zebra fix.", "Alpha fix."] },
+    { version: "## 0.4.0 (2026-11-03)", section: "Added", entries: ["Zebra addition.", "Alpha addition."] },
+  ]);
+  expect(parseChangelog(markdown)).toEqual([
+    {
+      version: "0.4.0",
+      date: "2026-11-03",
+      entries: ["Zebra fix.", "Alpha fix.", "Zebra addition.", "Alpha addition."],
+    },
+  ]);
+});
+
 test("an empty section does not affect the populated section that follows", () => {
   const markdown = [
     "## 1.2.3 (2026-11-09)",
