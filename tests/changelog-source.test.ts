@@ -3,6 +3,11 @@ import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
 
+test("CHANGELOG.md lists 0.1.1 before 0.1.0", () => {
+  const headings = [...source.matchAll(/^## (0\.1\.[01])(?:\s|$)/gm)].map((match) => match[1]);
+  expect(headings).toEqual(["0.1.1", "0.1.0"]);
+});
+
 function releaseSection(markdown: string, version: string): string {
   return markdown.split(/^## /m).find((section) => section.startsWith(`${version} `)) ?? "";
 }
