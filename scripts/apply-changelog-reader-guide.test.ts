@@ -744,6 +744,14 @@ describe("maintaining these notes", () => {
   const guide = docSection("Maintaining these notes");
   const paths = sources;
 
+  test("the search step names both apply history terms", () => {
+    const searchStep = guide.match(/^2\. Search both files[\s\S]*?(?=^3\. )/m)?.[0];
+    expect(searchStep).toBeDefined();
+    for (const term of ["`stack apply`", "`TODO_STACK_APPLY`"]) {
+      expect(searchStep).toContain(term);
+    }
+  });
+
   test("maintenance guide identifies both copies and the historical apply sections", () => {
     expect(doc).toContain("](../CHANGELOG.md)");
     expect(doc).toContain("](../packages/site/src/data/CHANGELOG.md)");
