@@ -146,13 +146,14 @@ describe("glossary", () => {
     expect(duplicateTerms("| Term | Meaning in these notes |\n| --- | --- |\n| `Example` | One |\n| example | Two |")).toEqual(["example"]);
   });
 
-  test("glossary entries for present and missing are distinct", () => {
+  test("glossary entries for present, missing and skipped are nonempty and distinct", () => {
     const entries = glossaryEntries(glossary);
-    const present = entries.get("present");
-    const missing = entries.get("missing");
-    expect(present).toBeTruthy();
-    expect(missing).toBeTruthy();
-    expect(present).not.toBe(missing);
+    const definitions = ["present", "missing", "skipped"].map((term) => {
+      const definition = entries.get(term)?.trim();
+      expect(definition, `missing glossary definition: ${term}`).toBeTruthy();
+      return definition;
+    });
+    expect(new Set(definitions).size).toBe(3);
   });
 
   test("links both source files and their matching historical fix", () => {
