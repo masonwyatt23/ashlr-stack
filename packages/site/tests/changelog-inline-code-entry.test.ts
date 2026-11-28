@@ -15,8 +15,11 @@ function spans(tokens: Token[]): string[] {
 }
 
 /** Each list entry under the `##` heading with this exact text: its source text and code spans. */
-function entries(markdown: string, version: string): { text: string; code: string[] }[] {
-  const tokens = marked.lexer(markdown);
+function entries(
+  markdown: string | Token[],
+  version: string,
+): { text: string; code: string[] }[] {
+  const tokens = typeof markdown === "string" ? marked.lexer(markdown) : markdown;
   const start = tokens.findIndex((t) => t.type === "heading" && t.depth === 2 && t.text === version);
   expect(start).toBeGreaterThanOrEqual(0);
   const end = tokens.findIndex((t, i) => i > start && t.type === "heading" && t.depth <= 2);
@@ -82,13 +85,15 @@ test("rendered HTML escapes span contents instead of treating them as markup", a
 });
 
 test("every published release keeps each code span inside its own entry text", () => {
-  const versions = marked
-    .lexer(published)
+  // Lex once: re-lexing the whole changelog per release is quadratic and grows past the
+  // default 5s test timeout as the changelog does.
+  const lexed = marked.lexer(published);
+  const versions = lexed
     .filter((t) => t.type === "heading" && t.depth === 2)
     .map((t) => (t as Tokens.Heading).text);
   expect(versions.length).toBeGreaterThan(1);
   for (const version of versions) {
-    for (const entry of entries(published, version)) {
+    for (const entry of entries(lexed, version)) {
       for (const code of entry.code) expect(entry.text).toContain(code);
     }
   }
